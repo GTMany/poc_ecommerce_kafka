@@ -1,0 +1,6 @@
+/home/emanuel/dev/projetos/estudos/kafka/poc_ecommerce_kafka/commom-kafka/src/main/java/br/com/gtmany/poc/kafka/ConsumerFunction.java
+/home/emanuel/dev/projetos/estudos/kafka/poc_ecommerce_kafka/commom-kafka/src/main/java/br/com/gtmany/poc/kafka/types/TOPIC_ENUM.java
+/home/emanuel/dev/projetos/estudos/kafka/poc_ecommerce_kafka/commom-kafka/src/main/java/br/com/gtmany/poc/kafka/KafkaService.java
+/home/emanuel/dev/projetos/estudos/kafka/poc_ecommerce_kafka/commom-kafka/src/main/java/br/com/gtmany/poc/kafka/GsonDeserializer.java
+/home/emanuel/dev/projetos/estudos/kafka/poc_ecommerce_kafka/commom-kafka/src/main/java/br/com/gtmany/poc/kafka/KafkaDispatcher.java
+/home/emanuel/dev/projetos/estudos/kafka/poc_ecommerce_kafka/commom-kafka/src/main/java/br/com/gtmany/poc/kafka/GsonSerializer.java
