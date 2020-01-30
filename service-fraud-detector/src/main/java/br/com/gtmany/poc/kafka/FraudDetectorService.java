@@ -1,5 +1,7 @@
 package br.com.gtmany.poc.kafka;
 
+import br.com.gtmany.poc.kafka.consumer.KafkaService;
+import br.com.gtmany.poc.kafka.dispatcher.KafkaDispatcher;
 import br.com.gtmany.poc.kafka.model.Order;
 import br.com.gtmany.poc.kafka.types.TOPIC_ENUM;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -16,16 +18,16 @@ public class FraudDetectorService {
 
     private final KafkaDispatcher<Order> orderDispatcher = new KafkaDispatcher<>();
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException, ExecutionException {
         FraudDetectorService fraudDetectorService = new FraudDetectorService();
         try(KafkaService service = new KafkaService<>(FraudDetectorService.class.getName(), TOPIC_ENUM.ECOMMERCE_NEW_ORDER.name(),
-                fraudDetectorService::parse, Order.class, new HashMap<>())) {
+                fraudDetectorService::parse, new HashMap<>())) {
             service.run();
         }
     }
 
-    private void parse(ConsumerRecord<String, Order> record) throws InterruptedException, ExecutionException {
-        Thread.sleep(5000);
+    private void parse(ConsumerRecord<String, Message<Order>> record) throws InterruptedException, ExecutionException {
+//        Thread.sleep(5000);
         logger.info("-------------------------------------------");
         logger.info("Processing new order, checking for fraud");
         logger.info("KEY: " + record.key().toString());
@@ -34,13 +36,18 @@ public class FraudDetectorService {
         logger.info("OFFSET: " + String.valueOf(record.offset()));
         logger.info("Order processed.");
 
-        Order order = record.value();
+        Message<Order> message = record.value();
+        Order order = message.getPayload();
         if(isFraud(order)){
             logger.info("Order is a fraud!");
-            orderDispatcher.send("ECOMMERCE_ORDER_REJECTED", order.getUserId(), order);
+            orderDispatcher.send("ECOMMERCE_ORDER_REJECTED", order.getUserId(),
+                    message.getId().continueWith(FraudDetectorService.class.getSimpleName()),
+                    order);
         } else {
             logger.info("Order Approved: " + order);
-            orderDispatcher.send("ECOMMERCE_ORDER_APPROVED", order.getUserId(), order);
+            orderDispatcher.send("ECOMMERCE_ORDER_APPROVED", order.getUserId(),
+                    message.getId().continueWith(FraudDetectorService.class.getSimpleName()),
+                    order);
         }
     }
 

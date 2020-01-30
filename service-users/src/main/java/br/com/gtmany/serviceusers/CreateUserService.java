@@ -1,6 +1,9 @@
 package br.com.gtmany.serviceusers;
 
-import br.com.gtmany.poc.kafka.KafkaService;
+import br.com.gtmany.poc.kafka.ConsumerService;
+import br.com.gtmany.poc.kafka.consumer.KafkaService;
+import br.com.gtmany.poc.kafka.Message;
+import br.com.gtmany.poc.kafka.consumer.ServiceRunner;
 import br.com.gtmany.poc.kafka.types.TOPIC_ENUM;
 import br.com.gtmany.serviceusers.model.Order;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -12,7 +15,7 @@ import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
-public class CreateUserService {
+public class CreateUserService implements ConsumerService<Order> {
 
     private static Logger logger = LoggerFactory.getLogger(CreateUserService.class);
     private final Connection connection;
@@ -25,15 +28,11 @@ public class CreateUserService {
                 "email varchar(200))");
     }
 
-    public static void main(String[] args) throws InterruptedException, SQLException {
-        CreateUserService createUserService = new CreateUserService();
-        try(KafkaService service = new KafkaService<>(CreateUserService.class.getName(), TOPIC_ENUM.ECOMMERCE_NEW_ORDER.name(),
-                createUserService::parse, Order.class, new HashMap<>())) {
-            service.run();
-        }
+    public static void main(String[] args) {
+        new ServiceRunner(CreateUserService::new).start(5);
     }
 
-    private void parse(ConsumerRecord<String, Order> record) throws InterruptedException, ExecutionException, SQLException {
+    public void parse(ConsumerRecord<String, Message<Order>> record) throws InterruptedException, ExecutionException, SQLException {
         Thread.sleep(5000);
         logger.info("-------------------------------------------");
         logger.info("Processing new order, checking for new user");
@@ -42,11 +41,21 @@ public class CreateUserService {
         logger.info("PARTITION: " + String.valueOf(record.partition()));
         logger.info("OFFSET: " + String.valueOf(record.offset()));
         logger.info("Order processed.");
-
-        Order order = record.value();
+        Message<Order> message = record.value();
+        Order order = message.getPayload();
         if(isNewUser(order.getEmail())){
             insertNewUser(order);
         }
+    }
+
+    @Override
+    public String getTopic() {
+        return TOPIC_ENUM.ECOMMERCE_NEW_ORDER.name();
+    }
+
+    @Override
+    public String getConsumerGroup() {
+        return CreateUserService.class.getName();
     }
 
     private void insertNewUser(Order order) throws SQLException {
